@@ -11,16 +11,19 @@
 
 #include <time.h>
 
-char * start();
-char  * fight(int num_fighters, char fighter_array[num_fighters][21], int stat_array[num_fighters][3]);
-int end(int c, int s);
+void start(char *winner);
+void fight(int num_fighters, char fighter_array[num_fighters][21], int stat_array[num_fighters][3],char *winner);
+void end(int c, int s);
 
 
 
 int main()
 {
 	int roster_len;
-	char server_message[256] = "You have reached the server\n";
+    char roster[30];
+    char *winner = malloc(21);
+	char *server_message = "You have reached the server\n";
+    FILE *fp = fopen("roster.txt", "w");
 
 	int server_socket, client_socket;
 	struct sockaddr_in server_address, client_address;
@@ -46,141 +49,142 @@ int main()
 	listen(server_socket, 10);
 
 	printf("Socket Listening!\n");
-
-	while (1)
-{
-	char *winner = malloc(21);
-    	int l = sizeof(client_address);
-	client_socket = accept(server_socket, (struct sockaddr *)&client_address, &l);
-	char *client_ip = inet_ntoa(client_address.sin_addr);
-	FILE *ip_log = fopen("ips.log","a");
-	if (ip_log == NULL)
-	{
-		printf("Error opening IP log file\n");
-	}
-	else
-	{
-		char time_msg[24];
-		struct tm *time_info;
-		time_t raw_time;
-		time (&raw_time);
-		time_info = localtime(&raw_time);
-		
-		strftime(time_msg,sizeof(time_msg),"%d %b, %Y %H:%M:%S", time_info);
-
-		fprintf(ip_log, "%s\t-\t %s\n", time_msg, client_ip);
-		fclose(ip_log);
-	}
-
-	printf("Client Connected: %s\n", client_ip );
-	FILE *fp = fopen("roster.txt", "w");
-	if (fp == NULL)
+    //continue to accept sockets until QUIT command sent
+	while (1){
+	    //initialize variables and close socket
+    	socklen_t l = sizeof(client_address);
+	    client_socket = accept(server_socket, (struct sockaddr *)&client_address, &l);
+	    char *client_ip = inet_ntoa(client_address.sin_addr);
+	    //log incoming connection
+        FILE *ip_log = fopen("ips.log","a");
+	    if (ip_log == NULL)
+	    {
+		    printf("Error opening IP log file\n");
+	    }
+        //log with timestamp
+	    else
+	    {
+		    char time_msg[24];
+		    struct tm *time_info;
+		    time_t raw_time;
+		    time (&raw_time);
+		    time_info = localtime(&raw_time);
+		    strftime(time_msg,sizeof(time_msg),"%d %b, %Y %H:%M:%S", time_info);
+		    fprintf(ip_log, "%s\t-\t %s\n", time_msg, client_ip);
+		    fclose(ip_log);
+	    }
+        //status message
+	    printf("Client Connected: %s\n", client_ip );
+	    
+        //open roster.txt to recieve data from socket
+        fp = fopen("roster.txt", "a");
+	    if (fp == NULL)
 		{
 			printf("File cannot be opened\n");
 			end(client_socket, server_socket);
 			return 1;
 		}
-	printf("File opened\n");
-	send(client_socket, server_message, sizeof(server_message), 0);
-	char roster[30];
-        char buff;
-
-	while (1)
+	    else
+            printf("File opened\n");
+	    while(1)
         {
-            printf("in the big loop \n");
-  	    for(int i = 0; i < 30; i++)
-	    {
-	    	    while (read(client_socket, &buff, 1))
-                    {
-                        if ((buff == '\n') || (buff == '\r'))
-                        {
-                            for(int j = i; j < 30; j++)
-                                roster[i] = '\0';
-                        }
-                        else
-                        {
-                            if(buff != '\'')
-                                roster[i] = buff;
-                        }
-                    }
-            }
-	    printf("Recieved: %s\n", roster);
-            fprintf(fp,"%s", roster);
-        
-
-
-/* 
-	while ((roster_len = read(client_socket, roster, sizeof(roster))) > 0)
-	{
-    	    printf("Received: '%.*s'\n", roster_len, roster);
-		//take input into roster text file
-	    fprintf(fp, "'%.*s", roster_len, roster);
-            printf("Acutally received: %s\n", roster);
-*/
-		//process fight with text file
-            if (strcmp(roster,"START") ==0)
+            //send welcome message to client
+            //send(client_socket, server_message, sizeof(server_message), 0);
+            
+            //read until 30th byte or '\n' or \r'
+            char buff;
+            int buff_read;
+            for(int i = 0; i < 30; i++)
             {
-                fclose(fp);
-                winner = start();
-                char winner_message[30];
-	        sprintf(winner_message, "Winner:  %s\n", winner);
-		//send winner 
-	        printf("sending %s", winner_message);
-                send(client_socket, winner_message, sizeof(winner_message), 0);
-		free(winner);
-	    }
-
-	    else if (strcmp(roster, "QUIT") == 0)
-	    {
+                buff_read = read(client_socket, &buff, 1);
+                
+                    //test for newline, return or eof. fill remainder of roster with null
+                    if ((buff == '\n') || (buff == '\r') || (buff_read == 0))
+                    {
+                        for(int j = i; j < 30; j++)
+                            roster[j] = '\0';
+                        break;
+                    }
+                    else //copy buff to our roster line, stripping the apostrophes
+                    {
+                        if(buff != '\'')
+                            roster[i] = buff;
+                    }
+                
+            }
+            if(roster > 0)
+            {
+                printf("Recieved: %s\n", roster);
+                fprintf(fp,"%s\n", roster);
+            }
+            else
+            {
+                printf("An error has occurred");
                 fclose(fp);
                 end(client_socket, server_socket);
-                break;
-	    }
+                return 2;
+            }
+            //process fight with text file if given command START
+            if (strcmp(roster,"START") == 0)
+            {
+                fclose(fp);
+                start(winner);
+                char winner_message[30];
+                sprintf(winner_message, "Winner:  %s\n", winner);
+            //send winner 
+                printf("sending %s", winner_message);
+                send(client_socket, winner_message, sizeof(winner_message), 0);
+                free(winner);
+                fclose(fp);
+                end(client_socket, server_socket);
+            }
+
+            else if ((buff_read <= 0) || (strcmp(roster, "QUIT") == 0))
+            {
+                fclose(fp);
+                end(client_socket, server_socket);
+                return 0;
+            }
+        }
 	}
-}
-	if (roster_len < 0)
+
+	/*if (roster_len < 0)
 		printf("read failure\n");
         fclose(fp);
 		end(client_socket, server_socket);
 		break;
-
-	if (strcmp(roster, "QUIT") == 0)
+    */
+	/*if (strcmp(roster, "QUIT") == 0)
 	{
-    fclose(fp);
-	end(client_socket, server_socket);
-	break;
+        fclose(fp);
+	    end(client_socket, server_socket);
+	    break;
 	}
 	end(client_socket, server_socket);
-	fclose(fp);
-
-}
-	close(server_socket);
-
-	return 0;
+	fclose(fp);*/
+	return 1;
 
 }
 
 //////////////////////////////////////end function//////////////////////////////////////////////
-int end(int c, int s)
+void end(int c, int s)
 {
 	close(c);
 	close(s);
-	return 1;
+	return;
 }
 
 
 ///////////////////////////////////////start function///////////////////////////////////////////
 
-char * start()
+void start(char * winner)
 {    
     printf("Populating roster\n");
-    char *winner = malloc(21);
     FILE *roster_file = fopen("roster.txt", "r");
     if (roster_file == NULL)
     {
         printf("Could not open file\n");
-        
-	return NULL;
+        return;
     }
     int num_fighters = 0;
     char num[3];
@@ -237,22 +241,21 @@ char * start()
             }
         }
         break;
-        winner = fight(num_fighters, fighter_array, stat_array);
+        fight(num_fighters, fighter_array, stat_array, winner);
     }
-    printf("Start winner: %s\n",winner);
-    return winner;
+    printf("Start winner: %s\n", winner);
+    return;
 }
 
 
 /////////////////////////////////////fight function/////////////////////////////////////////////
 
-char  * fight(int num_fighters, char fighter_array[num_fighters][21], int stats_array[num_fighters][3])
+void fight(int num_fighters, char fighter_array[num_fighters][21], int stats_array[num_fighters][3], char *winner)
 {
 
     printf("Starting Fight!\n");
 	//initialize randomizer
     srand(time(0));
-    char *winner = malloc(21);
     int A = 0;
     uint8_t dmg;
     for (int B = 1; B < num_fighters; B++)
@@ -318,5 +321,5 @@ char  * fight(int num_fighters, char fighter_array[num_fighters][21], int stats_
     printf("The winner is..\n\n%s\n\n", fighter_array[A]);
     winner = fighter_array[A];
     printf("fight winner: %s\n",winner);
-    return winner;
+    return;
 }

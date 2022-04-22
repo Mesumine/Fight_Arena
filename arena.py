@@ -2,7 +2,8 @@
 
 import socket
 import os
-
+import sys
+from time import sleep
 #initialize default IPv4 TCP socket
 
 def main():
@@ -15,91 +16,109 @@ def main():
         s.connect((server, port))
     except:
         print("unable to connect to server")
-#        quit()
-#    message = s.recv(1024)
-#    print(message)
-    roster = []
-    #intro screen goes here
-    
-    #menu
-    title = '''
-        ,gggg,                                             ,gggggggggggggg                                                   
-    ,88"""Y8b,           ,dPYb,                         dP""""""88""""""               ,dPYb,      I8                      
-    d8"     `Y8           IP'`Yb                         Yb,_    88                     IP'`Yb      I8                      
-    d8'   8b  d8           I8  8I                          `""    88    gg               I8  8I   88888888                   
-    ,8I    "Y88P'           I8  8'                              ggg88gggg""               I8  8'      I8                      
-    I8'          gg     gg  I8 dP       ,ggg,    ,gggggg,          88   8gg     ,gggg,gg  I8 dPgg,    I8    ,ggg,    ,gggggg, 
-    d8           I8     8I  I8dP   88ggi8" "8i   dP""""8I          88    88    dP"  "Y8I  I8dP" "8I   I8   i8" "8i   dP""""8I 
-    Y8,          I8,   ,8I  I8P    8I  I8, ,8I  ,8'    8I    gg,   88    88   i8'    ,8I  I8P    I8  ,I8,  I8, ,8I  ,8'    8I 
-    `Yba,,_____,,d8b, ,d8I ,d8b,  ,8I  `YbadP' ,dP     Y8,    "Yb,,8P  _,88,_,d8,   ,d8I ,d8     I8,,d88b, `YbadP' ,dP     Y8,
-    `"Y8888888P""Y88P"8888P'"Y88P"' 888P"Y8888P      `Y8      "Y8P'  8P""Y8P"Y8888P"88888P     `Y88P""Y8888P"Y8888P      `Y8
-                    ,d8I'                                                         ,d8I'                                     
-                    ,dP'8I                                                        ,dP'8I                                      
-                ,8"  8I                                                       ,8"  8I                                      
-                I8   8I                                                       I8   8I                                      
-                `8, ,8I                                                       `8, ,8I                                      
-                    `Y8P"                                                         `Y8P"                                       
-    '''
-    menu = '''
-    Please select an option. 
-    1. Load roster from file.
-    2. Enter Roster Manually
-    3. View Roster
-    4. Launch
-    5. Quit
-    '''
+        quit()
+    #message = s.recv(1024)
+    #print(message)
+    try:
+        roster = []
+        #intro screen goes here
+        
+        #menu
+        title = '''
+            ,gggg,                                             ,gggggggggggggg                                                   
+        ,88"""Y8b,           ,dPYb,                         dP""""""88""""""               ,dPYb,      I8                      
+        d8"     `Y8           IP'`Yb                         Yb,_    88                     IP'`Yb      I8                      
+        d8'   8b  d8           I8  8I                          `""    88    gg               I8  8I   88888888                   
+        ,8I    "Y88P'           I8  8'                              ggg88gggg""               I8  8'      I8                      
+        I8'          gg     gg  I8 dP       ,ggg,    ,gggggg,          88   8gg     ,gggg,gg  I8 dPgg,    I8    ,ggg,    ,gggggg, 
+        d8           I8     8I  I8dP   88ggi8" "8i   dP""""8I          88    88    dP"  "Y8I  I8dP" "8I   I8   i8" "8i   dP""""8I 
+        Y8,          I8,   ,8I  I8P    8I  I8, ,8I  ,8'    8I    gg,   88    88   i8'    ,8I  I8P    I8  ,I8,  I8, ,8I  ,8'    8I 
+        `Yba,,_____,,d8b, ,d8I ,d8b,  ,8I  `YbadP' ,dP     Y8,    "Yb,,8P  _,88,_,d8,   ,d8I ,d8     I8,,d88b, `YbadP' ,dP     Y8,
+        `"Y8888888P""Y88P"8888P'"Y88P"' 888P"Y8888P      `Y8      "Y8P'  8P""Y8P"Y8888P"88888P     `Y88P""Y8888P"Y8888P      `Y8
+                        ,d8I'                                                         ,d8I'                                     
+                        ,dP'8I                                                        ,dP'8I                                      
+                    ,8"  8I                                                       ,8"  8I                                      
+                    I8   8I                                                       I8   8I                                      
+                    `8, ,8I                                                       `8, ,8I                                      
+                        `Y8P"                                                         `Y8P"                                       
+        '''
+        menu = '''
+        Please select an option. 
+        1. Load roster from file.
+        2. Enter Roster Manually
+        3. View Roster
+        4. Reset Roster
+        5. Launch
+        6. Look at winners file
+        7. Quit
+        '''
 
-    #print(title)
-    selection = 2
-    validSelections = ("1", "2", "3", "4", "5")
+        #initialize selection and valid selections for input handling
+        selection = 2
+        validSelections = ("1", "2", "3", "4", "5", "6", "7")
 
-
-    while selection != "5":
-        clear()
-        print(title)
-        selection = input(menu)
-        if selection not in validSelections:
-            print("that is an invalid selection, please try again")
-        else:
-            #print(f"You chose {selection}")
-            if selection == "1":
-                clear()
-                roster = getFile(roster)
-                print(roster)
-                input("Press any key to continue")
-            if selection == "2":
-                clear()
-                roster = userInput(roster)
-                print(roster)
-                input("Press any key to continue")
-            if selection == "3":
-                clear()
-                print("Name\t\t\tAttack\tDodge\tLuck")
-                for line in roster:
-                    line = (line.split(":"))
-                    print(f"{line[0] :<20}\t{line[1]}\t{line[2]}\t{line[3]}")
-                input("Press any key to continue")
-            if selection == "4":
-                print("SENDING IT!")
-                message = b'3\n'
-                s.send(message)
-                for line in roster:  
-                    try:
-                        print(f"sending {line.encode()}")
-                        message = line + '\n'
-                        s.send(message.encode())              
-                    except IOError as e:
-                        if e.errno == errno.EPIPE:
-                            pass
-                        print("an error occurred")
-                startMessage = "START"
-                s.send(startMessage.encode())
-                winner = s.recv(1024)
-                print(winner)
-                input("Press any key to continue")
-            if selection == "5":
-                quit()
+        #menu loop, run until told to quit
+        while selection != "7":
+            #print title and menu and wait for user input
+            clear()
+            print(title)
+            selection = input(menu)
             
+            #inout validation
+            if selection not in validSelections:
+                print("that is an invalid selection, please try again")
+            else:
+                if selection == "1": #Load Roster from file
+                    clear()
+                    roster = getFile(roster)
+                    print(roster)
+                    input("Press any key to continue")
+                elif selection == "2": #Enter Roster Manually
+                    clear()
+                    roster = userInput(roster)
+                    print(roster)
+                    input("Press any key to continue")
+                elif selection == "3": #View Roster
+                    clear()
+                    print("Name\t\t\tAttack\tDodge\tLuck")
+                    for line in roster:
+                        line = (line.split(":"))
+                        print(f"{line[0] :<20}\t{line[1]}\t{line[2]}\t{line[3]}")
+                    input("Press any key to continue")
+                elif selection == "4": #Reset Roster
+                    clear()
+                    roster.clear()
+                    print("Roster cleared!")
+                    input("Press any key to continue")
+                
+                elif selection == "5": #Launch
+                    print("SENDING IT!")
+                    num_fighters = str(len(roster)) + '\n'
+                    s.send(num_fighters.encode())
+                    for line in roster:  
+                        try:
+                            print(f"sending {line.encode()}")
+                            message = line + '\n'
+                            s.send(message.encode())              
+                        except:
+                            pass
+                        #except IOError as e:
+                        #    if e.errno == errno.EPIPE:
+                        #        pass
+                        #    print("an error occurred")
+                    startMessage = "START\n"
+                    s.send(startMessage.encode())
+                    sleep(2)
+                    winner = s.recv(1024)
+                    print(winner)
+                    input("Press any key to continue")
+                elif selection == "6": #To Do: Display winners 
+                    selection = 7
+                if selection == "7": #Quit
+                    quit()
+    except KeyboardInterrupt:
+        s.close()
+        sys.exit(0)        
 def getFile(roster):
     numFighters = 0
     filename = input(
@@ -122,7 +141,12 @@ File: '''
         for line in fhand:
             error = 0
             stats = line.split(':')
-            name = stats[0]
+            #check for reserved names
+            if (stats[0] != "START" and stats[0] != "QUIT"):
+                name = stats[0]
+            else:
+                print(f"Invalid name {name}")
+                continue
             stats = [int(x) for x in stats[1:]]
             sum = 0
             for i in stats:
